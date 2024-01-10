@@ -6,4 +6,7 @@
 *.swo
 
 # Ignore program binaries in root directory
-main
+clox
+
+# Ignore anytime I flub :w
+\:w

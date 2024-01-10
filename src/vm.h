@@ -30,7 +30,7 @@ Value pop(void);
 
 void init_vm(void);
 void free_vm(void);
-InterpResult interpret(Chunk* chunk);
+InterpResult interpret(const char* source);
 
 
 #endif /*__LOX_VM_H*/

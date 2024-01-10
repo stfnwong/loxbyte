@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "common.h"
+#include "compiler.h"
 #include "vm.h"
 #include "debug.h"
 
@@ -95,11 +97,9 @@ void init_vm(void)
 void free_vm(void) {}
 
 
-InterpResult interpret(Chunk* chunk)
+InterpResult interpret(const char* source)
 {
-	vm.chunk = chunk;
-	vm.ip = vm.chunk->code;
-
-	return run();
+	compile(source);
+	return INTERPRET_OK;
 }
 
