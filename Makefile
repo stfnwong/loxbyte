@@ -55,7 +55,7 @@ $(TESTS): $(TEST_OBJECTS) $(OBJECTS)
 
 
 # ==== PROGRAM TARGETS ==== #
-PROGRAMS = 
+PROGRAMS = main
 PROGRAM_OBJECTS := $(PROGRAM_SOURCES:$(PROGRAM_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 $(PROGRAM_OBJECTS): $(OBJ_DIR)/%.o : $(PROGRAM_DIR)/%.c
@@ -83,7 +83,7 @@ clean:
 	# Clean test programs
 	rm -fv $(TEST_BIN_DIR)/test_*
 	# Remove the program binary from the root dir
-	rm -v lox
+	#rm -v lox
 
 print-%:
 	@echo $* = $($*)
