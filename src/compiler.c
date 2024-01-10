@@ -34,8 +34,28 @@ typedef enum {
 } Precedence;
 
 
+// ParseFn signature takes no arguments and returns nothing.
+typedef void (*ParseFn)();
+
+
+/*
+ * Parsing rules
+ */
+typedef struct {
+	ParseFn prefix;
+	ParseFn infix;
+	Precedence precedence;
+} ParseRule;
+
+
 Parser parser;
 Chunk* compiling_chunk;
+
+
+// Forward declare some functions
+static void expresion(void);
+static ParseRule* get_rule(TokenType type);
+static void parse_precedence(Precedence prec);
 
 
 static Chunk* current_chunk(void)
@@ -164,13 +184,13 @@ static void binary(void)
 			emit_byte(OP_ADD);
 			break;
 		case TOKEN_MINUS:
-			emit_byte(OP_MINUS);
+			emit_byte(OP_SUB);
 			break;
 		case TOKEN_STAR:
-			emit_byte(OP_MULTPLY);
+			emit_byte(OP_MUL);
 			break;
 		case TOKEN_SLASH:
-			emit_byte(OP_DIVIDE);
+			emit_byte(OP_DIV);
 			break;
 		default:
 			return;		// unreachable
@@ -179,6 +199,24 @@ static void binary(void)
 
 static void parse_precedence(Precedence prec)
 {
+	// Parse infix operations 
+	advance();
+
+	ParseFn prefix_rule = get_rule(parser.previous.type)->prefix;
+	if(prefix_rule == NULL)
+	{
+		error("Expect expression");
+		return;
+	}
+
+	prefix_rule();   // parse this function consuming input
+
+	while(prec <= get_rule(parser.current.type)->precedence)
+	{
+		advance();
+		ParseFn infix_rule = get_rule(parser.previous.type)->infix;
+		infix_rule();
+	}
 }
 
 
@@ -188,6 +226,7 @@ static void expression(void)
 {
 	parse_precedence(PREC_ASSIGNMENT);
 }
+
 
 
 static void grouping(void)
@@ -210,7 +249,7 @@ static void unary(void)
 
 	// Compile this operand
 	//expression();
-	parse_predenced(PREC_UNARY);
+	parse_precedence(PREC_UNARY);
 
 	// Emit the operators instruction
 	switch(op_type)
@@ -224,6 +263,52 @@ static void unary(void)
 }
 
 
+// Parsing Rules
+ParseRule rules[] = {
+	[TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
+	[TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_DOT]           = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
+	[TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
+	[TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
+	[TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
+	[TOKEN_BANG]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_BANG_EQUAL]    = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_EQUAL_EQUAL]   = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_GREATER]       = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_GREATER_EQUAL] = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_LESS]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_LESS_EQUAL]    = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_STRING]        = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
+	[TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_FALSE]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_FOR]           = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_FUNC]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_NIL]           = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_OR]            = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_TRUE]          = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
+	[TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
+};
+
+
+static ParseRule* get_rule(TokenType type)
+{
+	return &rules[type];
+}
 
 
 
