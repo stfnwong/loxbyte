@@ -20,3 +20,4 @@ Which builds the intepreter binary and places it in the root directory.
 - Simple memory management
 - Base of virtual machine with binary operators.
 - Start of debugger, stack tracing, disassembler.
+- Scanning.
