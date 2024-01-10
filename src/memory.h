@@ -2,8 +2,8 @@
  * MEMORY MANAGEMENT
  */
 
-#ifndef __MEMORY_H
-#define __MEMORY_H
+#ifndef __LOX_MEMORY_H
+#define __LOX_MEMORY_H
 
 #include "common.h"
 
@@ -30,4 +30,4 @@ void* reallocate(void* pointer, size_t old_size, size_t new_size);
 
 
 
-#endif /*__MEMORY_H*/
+#endif /*__LOX_MEMORY_H*/

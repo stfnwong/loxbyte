@@ -1,5 +1,5 @@
-#ifndef __VALUE_H
-#define __VALUE_H
+#ifndef __LOX_VALUE_H
+#define __LOX_VALUE_H
 
 #include "common.h"
 
@@ -25,4 +25,4 @@ void print_value(Value value);
 
 
 
-#endif /*__VALUE_H*/
+#endif /*__LOX_VALUE_H*/
