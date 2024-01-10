@@ -99,7 +99,23 @@ void free_vm(void) {}
 
 InterpResult interpret(const char* source)
 {
-	compile(source);
+	Chunk chunk;
+
+	init_chunk(&chunk);
+
+	if(!compile(source, &chunk))
+	{
+		free_chunk(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+
+	vm.chunk = &chunk;
+	vm.ip = vm.chunk->code;
+
+	InterpResult res = run();
+
+	free_chunk(&chunk);
+
 	return INTERPRET_OK;
 }
 
