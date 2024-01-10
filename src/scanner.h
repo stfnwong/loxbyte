@@ -72,4 +72,7 @@ void init_scanner(const char* source);
 Token scan_token(void);
 
 
+void print_token(Token* token);
+
+
 #endif /*__LOX_SCANNER_H*/

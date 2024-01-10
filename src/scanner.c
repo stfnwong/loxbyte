@@ -304,6 +304,7 @@ Token scan_token(void)
 		case '{': return make_token(TOKEN_LEFT_BRACE);
 		case '(': return make_token(TOKEN_LEFT_PAREN);
 		case '-': return make_token(TOKEN_MINUS);
+		case '+': return make_token(TOKEN_PLUS);
 		case '}': return make_token(TOKEN_RIGHT_BRACE);
 		case ')': return make_token(TOKEN_RIGHT_PAREN);
 		case ';': return make_token(TOKEN_SEMICOLON);
@@ -329,4 +330,10 @@ Token scan_token(void)
 	return error_token("Unexpected character.");
 }
 
+
+
+void print_token(Token* token)
+{
+	fprintf(stdout, "Token(%02d) '%.*s'\n", token->type, token->length, token->start);
+}
 
