@@ -16,6 +16,7 @@ typedef struct {
 	int count;
 	int capacity;
 	uint8_t* code;
+	int* lines;    // NOTE: is the order important for alignment?
 	ValueArray constants;
 } Chunk;
 
@@ -24,8 +25,10 @@ typedef struct {
 // namespacing by prefixing all these with chunk_.* ? 
 void init_chunk(Chunk* chunk);
 void free_chunk(Chunk* chunk);
-void write_chunk(Chunk* chunk, uint8_t data);
+void write_chunk(Chunk* chunk, uint8_t data, int line);
 int add_constant(Chunk* chunk, Value value);
+
+// TODO: implement a get_line() that does RLE on the line number
 
 
 #endif /*__CHUNK_H*/

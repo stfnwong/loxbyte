@@ -3,8 +3,8 @@
 #include "debug.h"
 
 
+// ======== INSTRUCTION UTIL FUNCTIONS ======== //
 
-// Instruction util functions go here 
 static int simple_instr(const char* name, int offset)
 {
 	fprintf(stdout, "%s\n", name);
@@ -28,6 +28,7 @@ static int const_instr(const char* name, Chunk* chunk, int offset)
 void disassemble_chunk(Chunk* chunk, const char* name)
 {
 	fprintf(stdout, "==== %s ====\n", name);
+	fprintf(stdout, "Offset  line  instr\n");
 
 	for(int offset = 0; offset < chunk->count;)
 		offset = disassemble_instr(chunk, offset);
@@ -39,7 +40,13 @@ void disassemble_chunk(Chunk* chunk, const char* name)
  */
 int disassemble_instr(Chunk* chunk, int offset)
 {
-	fprintf(stdout, "%04X ", offset);
+	fprintf(stdout, "%06X ", offset);
+
+	// Show the line number of the instruction 
+	if(offset > 0 && chunk->lines[offset] == chunk->lines[offset-1])
+		fprintf(stdout, "  |   ");
+	else
+		fprintf(stdout, "%4d  ", chunk->lines[offset]);
 
 	uint8_t instr = chunk->code[offset];
 	switch(instr)

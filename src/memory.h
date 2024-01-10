@@ -25,7 +25,7 @@
 	reallocate(pointer, sizeof(type) * (old_count), 0)
 
 
-
+// TODO: implement a custom allocator.
 void* reallocate(void* pointer, size_t old_size, size_t new_size);
 
 
