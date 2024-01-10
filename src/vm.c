@@ -1,6 +1,8 @@
 #include <stdio.h>
 
 #include "vm.h"
+#include "debug.h"
+
 
 VM vm;
 
@@ -13,17 +15,37 @@ static InterpResult run(void)
 
 	for(;;)
 	{
+#ifdef DEBUG_TRACE_EXECUTION
+		fprintf(stdout, "      ");
+		for(Value* slot = vm.stack; slot < vm.stack_top; slot++)
+		{
+			fprintf(stdout, "[");
+			print_value(*slot);
+			fprintf(stdout, "]");
+		}
+		fprintf(stdout, "\n");
+		disassemble_instr(vm.chunk, (int)(vm.ip - vm.chunk->code));
+#endif /*DEBUG_TRACE_EXECUTION*/
+
 		uint8_t instr = READ_BYTE();
 		switch(instr)
 		{
 			case OP_CONSTANT: {
 				Value constant = READ_CONSTANT();
+				push(constant);
 				print_value(constant);
 				fprintf(stdout, "\n");
 				break;
 			}
-			case OP_RETURN:
+			case OP_NEGATE: {
+				push(-pop());
+				break;
+			}
+			case OP_RETURN: {
+				print_value(pop());
+				fprintf(stdout, "\n");
 				return INTERPRET_OK;
+			}
 		}
 	}
 #undef READ_BYTE
@@ -31,7 +53,30 @@ static InterpResult run(void)
 }
 
 
-void init_vm(void) {}
+// ======== VM stack operations ======== //
+static void reset_stack(void)
+{
+	vm.stack_top = vm.stack;
+}
+
+void push(Value value)
+{
+	*vm.stack_top = value;
+	vm.stack_top++;
+}
+
+Value pop(void)
+{
+	vm.stack_top--;
+	return *vm.stack_top;
+}
+
+
+void init_vm(void)
+{
+	reset_stack();
+}
+
 
 void free_vm(void) {}
 
