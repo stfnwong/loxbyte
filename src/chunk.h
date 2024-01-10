@@ -1,5 +1,5 @@
-#ifndef __CHUNK_H
-#define __CHUNK_H
+#ifndef __LOX_CHUNK_H
+#define __LOX_CHUNK_H
 
 #include "common.h"
 #include "value.h"
@@ -31,4 +31,4 @@ int add_constant(Chunk* chunk, Value value);
 // TODO: implement a get_line() that does RLE on the line number
 
 
-#endif /*__CHUNK_H*/
+#endif /*__LOX_CHUNK_H*/
