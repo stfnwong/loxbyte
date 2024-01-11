@@ -14,6 +14,7 @@ typedef struct {
 	uint8_t* ip;  // instruction pointer for upcoming instruction
 	Value stack[STACK_MAX];
 	Value* stack_top;
+	Obj* objects;		// head of objects linked list
 } VM;
 
 

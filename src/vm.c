@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -71,8 +72,7 @@ static void concatenate(void)
 	chars[length] = '\0';
 
 	ObjString* result = take_string(chars, length);
-
-	return result;
+	push(OBJ_VAL(result));
 }
 
 

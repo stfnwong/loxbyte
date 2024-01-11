@@ -60,6 +60,14 @@ typedef enum {
 } TokenType;
 
 
+// Human-readable string representation of TokenType
+//static const char* token_string[] = {
+//};
+
+
+/*
+ * Token
+ */
 typedef struct {
 	TokenType type;
 	const char* start;
