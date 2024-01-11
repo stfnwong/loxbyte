@@ -34,13 +34,31 @@ void free_table(Table* table)
 static Entry* find_entry(Entry* entries, int capacity, ObjString* key)
 {
 	uint32_t index = key->hash % capacity;
+	Entry* tombstone = NULL;
 	
 	while(1)
 	{
 		Entry* entry = &entries[index];
-		
-		if(entry->key == key || entry->key == NULL)
-			return entry;
+
+		// While following the probe sequence if we see a 
+		// tombstone note it and continue.
+
+		if(entry->key == NULL)
+		{
+			if(IS_NIL(entry->value))
+			{
+				// Found an empty entry
+				return tombstone != NULL ? tombstone : entry;
+			}
+			else 
+			{
+				// Found a tombstone
+				if(tombstone == NULL)
+					tombstone = entry;
+			}
+		}
+		else if(entry->key == key)
+			return entry;		// this is the entry we are looking for
 
 		index = (index + 1) % capacity;
 	}
@@ -58,7 +76,10 @@ static void adjust_capacity(Table* table, int capacity)
 		entries[i].value = NIL_VAL;
 	}
 
-	// Re-insert every entry into the new array
+	// Re-insert every entry into the new array. We don't
+	// bother copying tombstones. This means we need to 
+	// recalculate the count from scratch.
+	table->count = 0;
 	for(int i = 0; i < table->capacity; i++)
 	{
 		Entry* entry = &table->entries[i];
@@ -68,6 +89,7 @@ static void adjust_capacity(Table* table, int capacity)
 		Entry* dest = find_entry(entries, capacity, entry->key);
 		dest->key = entry->key;
 		dest->value = entry->value;
+		table->count++;
 	}
 
 	// Release the old array memory
@@ -109,7 +131,9 @@ bool table_set(Table* table, ObjString* key, Value value)
 	Entry* entry = find_entry(table->entries, table->capacity, key);
 
 	bool is_new_key = entry->key == NULL;
-	if(is_new_key)
+	// Only increment key if the new entry is going into a 
+	// completely new bucket (ie: not a tombstone).
+	if(is_new_key && IS_NIL(entry->value))
 		table->count++;
 
 	entry->key = key;
@@ -147,3 +171,22 @@ void table_add_all(Table* from, Table* to)
 }
 
 
+/*
+ * table_delete()
+ */
+bool table_delete(Table* table, ObjString* key)
+{
+	if(table->count == 0)
+		return false;
+
+	// Find the entry 
+	Entry* entry = find_entry(table, table->capacity, key);
+	if(entry->key == NULL)
+		return false;
+
+	// Place a tombstone on the deleted entry 
+	entry->key = NULL;
+	entry->value = BOOL_VAL(true);
+
+	return true;
+}
