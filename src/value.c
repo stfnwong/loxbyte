@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "memory.h"
 #include "value.h"
+#include "object.h"
 
 
 bool values_equal(Value a, Value b)
@@ -17,6 +19,14 @@ bool values_equal(Value a, Value b)
 			return true;
 		case VAL_NUMBER:
 			return AS_NUMBER(a) == AS_NUMBER(b);  // TODO: float compare....
+
+		case VAL_OBJ: {
+			ObjString* astr = AS_STRING(a);
+			ObjString* bstr = AS_STRING(b);
+
+			return astr->length == bstr->length && 
+				memcmp(astr->chars, bstr->chars, astr->length) == 0;
+		}
 		default:
 			return false;			// <- unreachable
 	}
@@ -35,6 +45,7 @@ void free_value_array(ValueArray* array)
 	FREE_ARRAY(Value, array->values, array->capacity);
 	init_value_array(array);
 }
+
 
 void write_value_array(ValueArray* array, Value value)
 {
@@ -63,6 +74,9 @@ void print_value(Value value)
 			break;
 		case VAL_NIL:
 			printf("nil");
+			break;
+		case VAL_OBJ:
+			print_object(value);
 			break;
 	}
 }

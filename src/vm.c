@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compiler.h"
 #include "vm.h"
+#include "memory.h"
 #include "debug.h"
 
 
@@ -55,6 +56,23 @@ Value peek(int dist)
 static bool is_falsey(Value value)
 {
 	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
+
+static void concatenate(void)
+{
+	ObjString* bstr = AS_STRING(pop());
+	ObjString* astr = AS_STRING(pop());
+
+	int length = astr->length + bstr->length;
+	char* chars = ALLOCATE(char, length + 1);
+	memcpy(chars, astr->chars, astr->length);
+	memcpy(chars + astr->length, bstr->chars, bstr->length);
+	chars[length] = '\0';
+
+	ObjString* result = take_string(chars, length);
+
+	return result;
 }
 
 
@@ -123,7 +141,23 @@ static InterpResult run(void)
 			case OP_LESS:
 				BINARY_OP(BOOL_VAL, <); break;
 
-			case OP_ADD: BINARY_OP(NUMBER_VAL, +); break;
+			// Add either two numbers or concat two strings
+			case OP_ADD: {
+				if(IS_STR(peek(0)) && IS_STR(peek(1)))
+					concatenate();
+				else if(IS_NUMBER(peek(0)) && IS_NUMBER(peek(1)))
+				{
+					double b = AS_NUMBER(pop());
+					double a = AS_NUMBER(pop());
+					push(NUMBER_VAL(a + b));
+				}
+				else
+				{
+					runtime_error("Operands must be numbers or strings");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				break;
+			}
 			case OP_SUB: BINARY_OP(NUMBER_VAL, -); break;
 			case OP_MUL: BINARY_OP(NUMBER_VAL, *); break;
 			case OP_DIV: BINARY_OP(NUMBER_VAL, /); break;
