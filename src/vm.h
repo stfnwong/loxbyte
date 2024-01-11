@@ -25,8 +25,10 @@ typedef enum {
 
 
 // Stack manipulation
+static void reset_stack(void);
 void push(Value value);
 Value pop(void);
+Value peek(int dist);
 
 void init_vm(void);
 void free_vm(void);

@@ -234,7 +234,7 @@ static TokenType identifier_type(void)
 			break;
 		}
 		case 'i': return check_keyword(1, 2, "f",     TOKEN_IF);
-		case 'n': return check_keyword(1, 3, "il",    TOKEN_IF);
+		case 'n': return check_keyword(1, 2, "il",    TOKEN_IF);
 		case 'o': return check_keyword(1, 2, "r",     TOKEN_OR);
 		case 'p': return check_keyword(1, 4, "rint",  TOKEN_PRINT);
 		case 'r': return check_keyword(1, 5, "eturn", TOKEN_RETURN);
