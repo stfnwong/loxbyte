@@ -25,11 +25,11 @@ typedef enum {
 
 
 // Stack manipulation
-static void reset_stack(void);
-void push(Value value);
+void  push(Value value);
 Value pop(void);
 Value peek(int dist);
 
+// Virtual Machine
 void init_vm(void);
 void free_vm(void);
 InterpResult interpret(const char* source);

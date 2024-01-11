@@ -9,6 +9,8 @@
 
 VM vm;
 
+static void reset_stack(void);
+
 
 static void runtime_error(const char* format, ...)
 {
@@ -23,6 +25,36 @@ static void runtime_error(const char* format, ...)
 	fprintf(stderr, "[line %d] in script \n", line);
 
 	reset_stack();
+}
+
+
+// ======== VM stack operations ======== //
+static void reset_stack(void)
+{
+	vm.stack_top = vm.stack;
+}
+
+void push(Value value)
+{
+	*vm.stack_top = value;
+	vm.stack_top++;
+}
+
+Value pop(void)
+{
+	vm.stack_top--;
+	return *vm.stack_top;
+}
+
+Value peek(int dist)
+{
+	return vm.stack_top[-1 - dist];
+}
+
+
+static bool is_falsey(Value value)
+{
+	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
 
@@ -78,10 +110,26 @@ static InterpResult run(void)
 			case OP_FALSE:
 				push(BOOL_VAL(false));
 				break;
+
+			case OP_EQUAL: {
+				Value b = pop();
+				Value a = pop();
+				push(BOOL_VAL(values_equal(a, b)));
+				break;
+			}
+
+			case OP_GREATER:
+				BINARY_OP(BOOL_VAL, >); break;
+			case OP_LESS:
+				BINARY_OP(BOOL_VAL, <); break;
+
 			case OP_ADD: BINARY_OP(NUMBER_VAL, +); break;
 			case OP_SUB: BINARY_OP(NUMBER_VAL, -); break;
 			case OP_MUL: BINARY_OP(NUMBER_VAL, *); break;
 			case OP_DIV: BINARY_OP(NUMBER_VAL, /); break;
+			case OP_NOT:
+				push(BOOL_VAL(is_falsey(pop())));
+				break;
 			case OP_NEGATE: {
 				if(!IS_NUMBER(peek(0))) {
 					runtime_error("Operand must be a number");
@@ -102,30 +150,6 @@ static InterpResult run(void)
 #undef READ_BYTE
 #undef READ_CONSTANT
 #undef BINARY_OP
-}
-
-
-// ======== VM stack operations ======== //
-static void reset_stack(void)
-{
-	vm.stack_top = vm.stack;
-}
-
-void push(Value value)
-{
-	*vm.stack_top = value;
-	vm.stack_top++;
-}
-
-Value pop(void)
-{
-	vm.stack_top--;
-	return *vm.stack_top;
-}
-
-Value peek(int dist)
-{
-	return vm.stack_top[-1 - dist];
 }
 
 

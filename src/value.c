@@ -4,6 +4,24 @@
 #include "value.h"
 
 
+bool values_equal(Value a, Value b)
+{
+	if(a.type != b.type)
+		return false;
+
+	switch(a.type)
+	{
+		case VAL_BOOL:
+			return AS_BOOL(a) == AS_BOOL(b);
+		case VAL_NIL:
+			return true;
+		case VAL_NUMBER:
+			return AS_NUMBER(a) == AS_NUMBER(b);  // TODO: float compare....
+		default:
+			return false;			// <- unreachable
+	}
+}
+
 
 void init_value_array(ValueArray* array)
 {
