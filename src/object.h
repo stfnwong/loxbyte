@@ -22,16 +22,23 @@ typedef enum {
 } ObjType;
 
 
+/*
+ * Generic object structure
+ */
 struct Obj {
 	ObjType type;
 	struct Obj* next;
 };
 
 
+/*
+ * String object specialization
+ */
 struct ObjString {
 	Obj obj;
 	int length;
 	char* chars;
+	uint32_t hash;
 };
 
 
