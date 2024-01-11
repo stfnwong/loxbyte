@@ -36,4 +36,6 @@ void free_vm(void);
 InterpResult interpret(const char* source);
 
 
+extern VM vm;
+
 #endif /*__LOX_VM_H*/

@@ -190,10 +190,14 @@ static InterpResult run(void)
 void init_vm(void)
 {
 	reset_stack();
+	vm.objects = NULL;
 }
 
 
-void free_vm(void) {}
+void free_vm(void)
+{
+	free_objects();
+}
 
 
 InterpResult interpret(const char* source)
