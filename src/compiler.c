@@ -63,6 +63,11 @@ Chunk* compiling_chunk;
 static ParseRule* get_rule(TokenType type);
 static void parse_precedence(Precedence prec);
 
+// Forward declare production functions 
+static void statment(void);
+static void declaration(void);
+
+
 
 static Chunk* current_chunk(void)
 {
@@ -98,6 +103,11 @@ static void error_at_current(const char* msg)
 }
 
 
+/*
+ * advance()
+ * Move the compiler forward by one token, consuming the 
+ * token in the process.
+ */
 static void advance(void)
 {
 	parser.previous = parser.current;
@@ -120,6 +130,9 @@ static void advance(void)
 }
 
 
+/*
+ * consume()
+ */
 static void consume(TokenType type, const char* msg)
 {
 	if(parser.current.type == type)
@@ -129,6 +142,28 @@ static void consume(TokenType type, const char* msg)
 	}
 
 	error_at_current(msg);
+}
+
+
+/*
+ * check()
+ */
+static bool check(TokenType type)
+{
+	return parser.current.type == type;
+}
+
+
+/*
+ * match()
+ */
+static bool match(TokenType type)
+{
+	if(!check(type))
+		return false;
+	advance();
+
+	return true;
 }
 
 
@@ -304,6 +339,32 @@ static void expression(void)
 	parse_precedence(PREC_ASSIGNMENT);
 }
 
+/*
+ * print_statement()
+ */
+static void print_statement(void)
+{
+	expression();
+	consume(TOKEN_SEMICOLON, "Expect ';' after value");
+	emit_byte(OP_PRINT);
+}
+
+/*
+ * statement()
+ * Parse a single statement
+ */
+static void statement(void)
+{
+	if(match(TOKEN_PRINT))
+		print_statement();
+}
+
+
+static void declaration(void)
+{
+	statement();
+}
+
 
 
 static void grouping(void)
@@ -311,6 +372,7 @@ static void grouping(void)
 	expression();
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression");
 }
+
 
 
 static void number(void)
@@ -415,8 +477,9 @@ bool compile(const char* source, Chunk* chunk)
 
 	advance();
 
-	expression();
-	consume(TOKEN_EOF, "Expect end of expression");
+	while(!match(TOKEN_EOF))
+		declaration();
+
 	end_compiler();
 
 	return !parser.had_error;

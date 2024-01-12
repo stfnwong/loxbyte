@@ -77,6 +77,8 @@ int disassemble_instr(Chunk* chunk, int offset)
 			return simple_instr("OP_NOT", offset);
 		case OP_NEGATE:
 			return simple_instr("OP_NEGATE", offset);
+		case OP_PRINT:
+			return simple_instr("OP_PRINT", offset);
 		case OP_CONSTANT:
 			return const_instr("OP_CONSTANT", chunk, offset);
 		default:

@@ -173,9 +173,14 @@ static InterpResult run(void)
 				push(NUMBER_VAL(-AS_NUMBER(pop())));
 				break;
 			}
-			case OP_RETURN: {
+
+			case OP_PRINT: {
 				print_value(pop());
-				fprintf(stdout, "\n");
+				printf("\n");
+				break;
+			}
+
+			case OP_RETURN: {
 				return INTERPRET_OK;
 			}
 		}
