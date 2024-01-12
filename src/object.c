@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include "object.h"
+#include "table.h"
+#include "value.h"
 #include "memory.h"
 #include "vm.h"
 
@@ -50,6 +52,9 @@ static ObjString* allocate_string(char* chars, int length, uint32_t hash)
 	str->chars = chars;
 	str->hash = hash;
 
+	// Add this string to deduplication table 
+	table_set(&vm.strings, str, NIL_VAL);
+
 	return str;
 }
 
@@ -61,6 +66,13 @@ static ObjString* allocate_string(char* chars, int length, uint32_t hash)
 ObjString* copy_string(const char* chars, int length)
 {
 	uint32_t hash = hash_string(chars, length);
+
+	// Check for duplication. If we've seen this string before
+	// then just return that string.
+	ObjString* interned = table_find_string(&vm.strings, chars, length, hash);
+	if(interned != NULL)
+		return interned; 
+
 	char* heap_chars = ALLOCATE(char, length + 1);
 	memcpy(heap_chars, chars, length);
 	heap_chars[length] = '\0';
@@ -73,9 +85,19 @@ ObjString* copy_string(const char* chars, int length)
  * take_string()
  * Move constructor for a ObjString.
  */
-ObjString* take_string(const char* chars, int length)
+ObjString* take_string(char* chars, int length)
 {
 	uint32_t hash = hash_string(chars, length);
+	// If we are taking ownership and we see the same string 
+	// then we need to take care of the memory associated with 
+	// the original string. 
+	ObjString* interned = table_find_string(&vm.strings, chars, length, hash);
+	if(interned != NULL)
+	{
+		FREE_ARRAY(char, chars, length + 1);
+		return interned;
+	}
+
 	return allocate_string(chars, length, hash);
 }
 

@@ -171,6 +171,37 @@ void table_add_all(Table* from, Table* to)
 }
 
 
+
+/*
+ * table_find_string()
+ */
+ObjString* table_find_string(Table* table, const char* chars, int length, uint32_t hash)
+{
+	if(table->count == 0)
+		return NULL;
+
+	uint32_t index = hash % table->capacity;
+
+	while(1)
+	{
+		Entry* entry = &table->entries[index];
+
+		if(entry->key == NULL)
+		{
+			// If we find any empty non-tombstone entry then stop
+			if(IS_NIL(entry->value))
+				return NULL;
+		}
+		else if((entry->key->length == length) && 
+				(entry->key->hash == hash) &&
+				(memcmp(entry->key->chars, chars, length) == 0))
+			return entry->key;  // <- this is the key we want
+
+		index = (index + 1) % table->capacity;
+	}
+}
+
+
 /*
  * table_delete()
  */
@@ -180,7 +211,7 @@ bool table_delete(Table* table, ObjString* key)
 		return false;
 
 	// Find the entry 
-	Entry* entry = find_entry(table, table->capacity, key);
+	Entry* entry = find_entry(table->entries, table->capacity, key);
 	if(entry->key == NULL)
 		return false;
 

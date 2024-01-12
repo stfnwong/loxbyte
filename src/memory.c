@@ -21,6 +21,10 @@ void* reallocate(void* pointer, size_t old_size, size_t new_size)
 }
 
 
+/*
+ * free_object()
+ * Free an Obj's memory.
+ */
 void free_object(Obj* object)
 {
 	switch(object->type)
@@ -35,6 +39,10 @@ void free_object(Obj* object)
 }
 
 
+/*
+ * free_objects()
+ * Free all objects attached to the VM
+ */
 void free_objects(void)
 {
 	Obj* object = vm.objects;

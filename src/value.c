@@ -20,13 +20,8 @@ bool values_equal(Value a, Value b)
 		case VAL_NUMBER:
 			return AS_NUMBER(a) == AS_NUMBER(b);  // TODO: float compare....
 
-		case VAL_OBJ: {
-			ObjString* astr = AS_STRING(a);
-			ObjString* bstr = AS_STRING(b);
-
-			return astr->length == bstr->length && 
-				memcmp(astr->chars, bstr->chars, astr->length) == 0;
-		}
+		case VAL_OBJ:
+			return AS_OBJ(a) == AS_OBJ(b);
 		default:
 			return false;			// <- unreachable
 	}
