@@ -18,6 +18,7 @@ typedef struct {
 	Token previous;
 	bool had_error;
 	bool panic_mode;
+	bool verbose;
 } Parser;
 
 
@@ -104,8 +105,13 @@ static void advance(void)
 	while(1)
 	{
 		parser.current = scan_token();
-		fprintf(stdout, "[%s]: parser.current: ", __func__);
-		print_token(&parser.current);
+
+		if(parser.verbose)
+		{
+			fprintf(stdout, "[%s]: parser.current: ", __func__);
+			print_token(&parser.current);
+		}
+
 		if(parser.current.type != TOKEN_ERROR)
 			break;
 
@@ -164,6 +170,7 @@ static void emit_constant(Value value)
 static void end_compiler(void)
 {
 	emit_return();
+	// TODO: put this behind verbose switch?
 #ifdef DEBUG_PRINT_CODE
 	if(!parser.had_error)
 		disassemble_chunk(current_chunk(), "code");
@@ -266,8 +273,11 @@ static void parse_precedence(Precedence prec)
 	// Parse infix operations 
 	advance();
 
-	fprintf(stdout, "[%s] : parser.previous ", __func__);
-	print_token(&parser.previous);
+	if(parser.verbose)
+	{
+		fprintf(stdout, "[%s] : parser.previous ", __func__);
+		print_token(&parser.previous);
+	}
 
 	ParseFn prefix_rule = get_rule(parser.previous.type)->prefix;
 	if(prefix_rule == NULL)
@@ -397,6 +407,7 @@ static ParseRule* get_rule(TokenType type)
 bool compile(const char* source, Chunk* chunk)
 {
 	init_scanner(source);
+	parser.verbose = true;		// TODO: make this settable from shell
 	
 	compiling_chunk = chunk;
 	parser.had_error = false;
