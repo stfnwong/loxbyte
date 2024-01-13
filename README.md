@@ -38,3 +38,8 @@ The statement grammar at the time of writing is
 - Start of debugger, stack tracing, disassembler.
 - Scanning, compilation. Implements Pratt parser. 
 - Hash Table.
+
+
+## Things to implement
+- Run-length encoding of `get_line()`.
+- Optimize global variable slot table so that we don't add new entries for the same function.

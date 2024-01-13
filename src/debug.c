@@ -59,6 +59,14 @@ int disassemble_instr(Chunk* chunk, int offset)
 			return simple_instr("OP_TRUE", offset);
 		case OP_FALSE:
 			return simple_instr("OP_FALSE", offset);
+		case OP_POP:
+			return simple_instr("OP_POP", offset);
+		case OP_DEFINE_GLOBAL:
+			return const_instr("OP_DEFINE_GLOBAL", chunk, offset);
+		case OP_GET_GLOBAL:
+			return const_instr("OP_GET_GLOBAL", chunk, offset);
+		case OP_SET_GLOBAL:
+			return const_instr("OP_SET_GLOBAL", chunk, offset);
 		case OP_EQUAL:
 			return simple_instr("OP_EQUAL", offset);
 		case OP_GREATER:
