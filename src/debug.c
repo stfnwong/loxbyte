@@ -5,12 +5,18 @@
 
 // ======== INSTRUCTION UTIL FUNCTIONS ======== //
 
+/*
+ * simple_instr()
+ */
 static int simple_instr(const char* name, int offset)
 {
 	fprintf(stdout, "%s\n", name);
 	return offset + 1;
 }
 
+/*
+ * const_instr()
+ */
 static int const_instr(const char* name, Chunk* chunk, int offset)
 {
 	uint8_t constant = chunk->code[offset + 1];
@@ -18,6 +24,17 @@ static int const_instr(const char* name, Chunk* chunk, int offset)
 	print_value(chunk->constants.values[constant]);
 	fprintf(stdout, "'\n");
 
+	return offset + 2;
+}
+
+/*
+ * byte_instr()
+ */
+static int byte_instr(const char* name, Chunk* chunk, int offset)
+{
+	uint8_t slot = chunk->code[offset + 1];
+	fprintf(stdout, "%-16s %4d\n", name, slot);
+	
 	return offset + 2;
 }
 
@@ -67,6 +84,10 @@ int disassemble_instr(Chunk* chunk, int offset)
 			return const_instr("OP_GET_GLOBAL", chunk, offset);
 		case OP_SET_GLOBAL:
 			return const_instr("OP_SET_GLOBAL", chunk, offset);
+		case OP_GET_LOCAL:
+			return byte_instr("OP_GET_LOCAL", chunk, offset);
+		case OP_SET_LOCAL:
+			return byte_instr("OP_SET_LOCAL", chunk, offset);
 		case OP_EQUAL:
 			return simple_instr("OP_EQUAL", offset);
 		case OP_GREATER:

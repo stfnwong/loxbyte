@@ -26,9 +26,10 @@ The statement grammar at the time of writing is
 
 - `program -> declaration | eof;`
 - `declaration -> statement;`
-- `statement -> expr_stmt | print_stmt`
+- `statement -> expr_stmt | print_stmt | block`
 - `expr_stmt -> expression ";"`
 - `print_stmt -> "print" expression ";"`
+- `block_stmt -> "{" declaration "}";`
 
 
 ## What's implemented

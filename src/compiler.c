@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "compiler.h"
 #include "scanner.h"
@@ -53,9 +54,27 @@ typedef struct {
 	Precedence precedence;
 } ParseRule;
 
+/*
+ * Local variable
+ */
+typedef struct {
+	Token name;
+	int depth;
+} Local;
+
+
+/*
+ * Compiler
+ */
+typedef struct {
+	Local locals[UINT8_COUNT];
+	int local_count;
+	int scope_depth;
+} Compiler;
 
 Parser parser;
 Chunk* compiling_chunk;
+Compiler* current_compiler = NULL;
 
 
 // Forward declare some functions
@@ -64,7 +83,7 @@ static ParseRule* get_rule(TokenType type);
 static void parse_precedence(Precedence prec);
 
 // Forward declare production functions 
-static void statment(void);
+static void statement(void);
 static void declaration(void);
 
 
@@ -202,6 +221,20 @@ static void emit_constant(Value value)
 }
 
 
+/*
+ * init_compiler()
+ */
+static void init_compiler(Compiler* compiler)
+{
+	compiler->local_count = 0;
+	compiler->scope_depth = 0;
+	current_compiler = compiler;
+}
+
+
+/*
+ * end_compiler()
+ */
 static void end_compiler(void)
 {
 	emit_return();
@@ -210,6 +243,32 @@ static void end_compiler(void)
 	if(!parser.had_error)
 		disassemble_chunk(current_chunk(), "code");
 #endif /*DEBUG_PRINT_CODE*/
+}
+
+
+/* 
+ * begin_scope()
+ */
+static void begin_scope(void)
+{
+	current_compiler->scope_depth++;
+}
+
+/*
+ * end_scope()
+ */
+static void end_scope(void)
+{
+	current_compiler->scope_depth--;
+
+	// Pop locals off the stack frame 	
+	while(current_compiler->local_count > 0 && 
+		  (current_compiler->locals[current_compiler->local_count-1].depth > current_compiler->scope_depth))
+
+	{
+		emit_byte(OP_POP);
+		current_compiler->local_count--;
+	}
 }
 
 
@@ -345,12 +404,92 @@ static uint8_t identifier_constant(Token* name)
 }
 
 
+
+/*
+ * add_local()
+ */
+static void add_local(Token name)
+{
+	if(current_compiler->local_count >= UINT8_COUNT)
+	{
+		error("Too many local variables in function");
+		return;
+	}
+
+	Local* local = &current_compiler->locals[current_compiler->local_count];
+	local->name = name;
+	local->depth = current_compiler->scope_depth;
+}
+
+
+
+/*
+ * identifiers_equal()
+ */
+static bool identifiers_equal(Token* a, Token* b)
+{
+	if(a->length != b->length)
+		return false;
+
+	return memcmp(a->start, b->start, a->length) == 0;
+}
+
+
+/*
+ * resolve_local()
+ */
+static int resolve_local(Compiler* compiler, Token* name)
+{
+	for(int i = compiler->local_count-1; i > 0; --i)
+	{
+		Local* local = &compiler->locals[i];
+		if(identifiers_equal(name, &local->name))
+			return i;
+	}
+
+	return -1;
+}
+
+/*
+ * delcare_variable()
+ */
+static void declare_variable(void)
+{
+	// Global variables are implicitly declared
+	if(current_compiler->scope_depth == 0)
+		return;
+
+	Token* name = &parser.previous;
+	
+	// In Lox it is an error to have the same name defined 
+	// twice in the same scope. Note that this is not shadowing
+	// (where we have the same name in different scopes). 
+	// We check that variables are not re-defined here by
+	// checking all the variables in the current scope.
+	
+	for(int i = current_compiler->local_count; i > 0; --i)
+	{
+		Local* local = &current_compiler->locals[i];
+		if(local->depth != -1 && local->depth < current_compiler->scope_depth)
+			break;
+
+		if(identifiers_equal(name, &local->name))
+			error("Already a variable with that name in scope");
+	}
+
+	add_local(*name);
+}
+
 /*
  * parse_variable()
  */
 static uint8_t parse_variable(const char* err_msg)
 {
 	consume(TOKEN_IDENTIFIER, err_msg);
+
+	declare_variable();
+	if(current_compiler->scope_depth > 0)
+		return 0;
 	
 	return identifier_constant(&parser.previous);
 }
@@ -360,6 +499,17 @@ static uint8_t parse_variable(const char* err_msg)
 static void expression(void)
 {
 	parse_precedence(PREC_ASSIGNMENT);
+}
+
+/*
+ * block()
+ */
+static void block(void)
+{
+	while(!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
+		declaration();
+
+	consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
 /*
@@ -418,6 +568,12 @@ static void statement(void)
 {
 	if(match(TOKEN_PRINT))
 		print_statement();
+	else if(match(TOKEN_LEFT_BRACE))
+	{
+		begin_scope();
+		block();
+		end_scope();
+	}
 	else
 		expression_statement();
 }
@@ -471,7 +627,9 @@ static void declaration(void)
 }
 
 
-
+/*
+ * grouping()
+ */
 static void grouping(bool can_assign)
 {
 	expression();
@@ -480,7 +638,10 @@ static void grouping(bool can_assign)
 
 
 
-static void number(void)
+/*
+ * number()
+ */
+static void number(bool can_assign)
 {
 	double value = strtod(parser.previous.start, NULL);
 	emit_constant(NUMBER_VAL(value));
@@ -509,15 +670,27 @@ static void string(bool can_assign)
  */
 static void named_variable(Token name, bool can_assign)
 {
-	uint8_t arg = identifier_constant(&name);
+	uint8_t get_op, set_op;
+	uint8_t arg = resolve_local(current_compiler, &name);
+
+	if(arg != -1)
+	{
+		get_op = OP_GET_LOCAL;
+		set_op = OP_SET_LOCAL;
+	}
+	else
+	{
+		get_op = OP_GET_GLOBAL;
+		set_op = OP_SET_GLOBAL;
+	}
 
 	if(can_assign && match(TOKEN_EQUAL))
 	{
 		expression();
-		emit_bytes(OP_SET_GLOBAL, arg);
+		emit_bytes(set_op, (uint8_t) arg);
 	}
 	else
-		emit_bytes(OP_GET_GLOBAL, arg);
+		emit_bytes(get_op, (uint8_t) arg);
 }
 
 
@@ -604,11 +777,13 @@ static ParseRule* get_rule(TokenType type)
 bool compile(const char* source, Chunk* chunk)
 {
 	init_scanner(source);
-	parser.verbose = true;		// TODO: make this settable from shell
-	
+	Compiler compiler;
+	init_compiler(&compiler);
 	compiling_chunk = chunk;
+
 	parser.had_error = false;
 	parser.panic_mode = false;
+	parser.verbose = true;		// TODO: make this settable from shell
 
 	advance();
 
