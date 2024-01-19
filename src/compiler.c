@@ -418,7 +418,7 @@ static void add_local(Token name)
 
 	Local* local = &current_compiler->locals[current_compiler->local_count];
 	local->name = name;
-	local->depth = current_compiler->scope_depth;
+	local->depth = -1; 	// mark as uninitialized
 }
 
 
@@ -444,7 +444,11 @@ static int resolve_local(Compiler* compiler, Token* name)
 	{
 		Local* local = &compiler->locals[i];
 		if(identifiers_equal(name, &local->name))
+		{
+			if(local->depth == -1)
+				error("Can't read local variable in its own initializer");
 			return i;
+		}
 	}
 
 	return -1;
@@ -533,12 +537,29 @@ static void print_statement(void)
 	emit_byte(OP_PRINT);
 }
 
+/*
+ * mark_initialized()
+ */
+static void mark_initialized(void)
+{
+	// A local varsiable with non-zero depth means that we 
+	// have seen and compiled that variables initializer.
+	current_compiler->locals[current_compiler->local_count-1].depth = current_compiler->scope_depth;
+}
+
 
 /*
  * define_variable()
  */
 static void define_variable(uint8_t global)
 {
+	// Don't define locals here
+	if(current_compiler->scope_depth > 0)
+	{
+		mark_initialized();
+		return;
+	}
+
 	emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
