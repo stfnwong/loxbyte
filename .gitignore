@@ -10,3 +10,6 @@ clox
 
 # Ignore anytime I flub :w
 \:w
+
+# Ignore clangd cache
+.cache/

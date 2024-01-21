@@ -42,6 +42,17 @@ static Obj* allocate_object(size_t size, ObjType type)
 }
 
 
+ObjString* make_objstring(char* chars, int length)
+{
+	ObjString* str = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+
+	str->chars = chars;
+	str->length = length;
+	str->hash = hash_string(chars, length);
+
+	return str;
+}
+
 /*
  * allocate_string()
  */

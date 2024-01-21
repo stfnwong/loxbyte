@@ -16,7 +16,7 @@ CFLAGS=-Wall -g2 -std=c99 -D_REENTRANT $(OPT) -fPIC -shared
 TESTFLAGS=
 LDFLAGS=-pthread
 LIBS= 
-TEST_LIBS=
+TEST_LIBS=-lcheck
 
 # style for assembly output
 ASM_STYLE=intel

@@ -41,6 +41,7 @@ struct ObjString {
 	uint32_t hash;
 };
 
+ObjString* make_objstring(char* chars, int length);
 
 ObjString* copy_string(const char* chars, int length);
 ObjString* take_string(char* chars, int length);

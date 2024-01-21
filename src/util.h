@@ -12,7 +12,7 @@
 
 static bool float_equal(float a, float b)
 {
-	return fabs(a - b) < STANDARD_EPS : true : false;
+	return fabs(a - b) < STANDARD_EPS ? true : false;
 }
 
 
