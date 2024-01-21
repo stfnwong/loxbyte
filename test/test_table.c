@@ -49,7 +49,7 @@ Suite* table_suite(void)
 {
 	Suite* s;
 
-	s = suite_create("Hash Table");
+	s = suite_create("hash table");
 
 	// Test insert values 
 	TCase* tc_insert = tcase_create("Insert Values");
