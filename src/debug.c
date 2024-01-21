@@ -40,6 +40,20 @@ static int byte_instr(const char* name, Chunk* chunk, int offset)
 
 
 /*
+ * jump_instr()
+ */
+static int jump_instr(const char* name, int sign, Chunk* chunk, int offset)
+{
+	uint16_t jump = (uint16_t) (chunk->code[offset+1] << 8);
+	jump |= chunk->code[offset+2];
+
+	fprintf(stdout, "%-16s %4d -> %d\n", name, offset, offset +3 + sign * jump);
+
+	return offset + 3;
+}
+
+
+/*
  * disassemble_chunk()
  */
 void disassemble_chunk(Chunk* chunk, const char* name)
@@ -108,6 +122,10 @@ int disassemble_instr(Chunk* chunk, int offset)
 			return simple_instr("OP_NEGATE", offset);
 		case OP_PRINT:
 			return simple_instr("OP_PRINT", offset);
+		case OP_JUMP:
+			return jump_instr("OP_JUMP", 1, chunk, offset);
+		case OP_JUMP_IF_FALSE:
+			return jump_instr("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OP_CONSTANT:
 			return const_instr("OP_CONSTANT", chunk, offset);
 		default:

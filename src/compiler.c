@@ -199,6 +199,18 @@ static uint8_t make_constant(Value value)
 	return (uint8_t) constant;
 }
 
+static void patch_jump(int offset)
+{
+	// -2 here to adjust for the jump offset
+	int jump = current_chunk()->count - offset - 2;
+
+	if(jump > UINT16_MAX)
+		error("Too much code to jump over.");
+
+	current_chunk()->code[offset] = (jump >> 8) & 0xFF;
+	current_chunk()->code[offset+1] = jump & 0xFF;
+}
+
 static void emit_byte(uint8_t byte)
 {
 	write_chunk(current_chunk(), byte, parser.previous.line);
@@ -208,6 +220,15 @@ static void emit_bytes(uint8_t b1, uint8_t b2)
 {
 	emit_byte(b1);
 	emit_byte(b2);
+}
+
+static int emit_jump(uint8_t instr)
+{
+	emit_byte(instr);
+	emit_byte(0xFF);
+	emit_byte(0xFF);
+
+	return current_chunk()->count - 2;
 }
 
 static void emit_return(void)
@@ -581,6 +602,32 @@ static void var_decl(void)
 	define_variable(global);
 }
 
+
+/*
+ * if_statement()
+ */
+static void if_statement(void)
+{
+	consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
+	expression();
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+	int then_jump = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	statement();
+
+	int else_jump = emit_jump(OP_JUMP);
+
+	patch_jump(then_jump);
+	emit_byte(OP_POP);
+
+	if(match(TOKEN_ELSE))
+		statement();
+
+	patch_jump(else_jump);
+}
+
+
 /*
  * statement()
  * Parse a single statement
@@ -589,6 +636,8 @@ static void statement(void)
 {
 	if(match(TOKEN_PRINT))
 		print_statement();
+	else if(match(TOKEN_IF))
+		if_statement();
 	else if(match(TOKEN_LEFT_BRACE))
 	{
 		begin_scope();
