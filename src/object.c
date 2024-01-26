@@ -113,12 +113,31 @@ ObjString* take_string(char* chars, int length)
 }
 
 
+/*
+ * Function
+ */
+
+ObjFunction* new_function(void)
+{
+	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+
+	function->arity = 0;
+	function->name = NULL;
+	init_chunk(&function->chunk);
+
+	return function;
+}
+
+
 void print_object(Value value)
 {
 	switch(OBJ_TYPE(value))
 	{
 		case OBJ_STRING:
 			fprintf(stdout, "%s", AS_CSTRING(value));
+			break;
+		case OBJ_FUNCTION:
+			fprintf(stdout, "%s", AS_FUNCTION(value));
 			break;
 	}
 }
