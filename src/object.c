@@ -136,8 +136,13 @@ void print_object(Value value)
 		case OBJ_STRING:
 			fprintf(stdout, "%s", AS_CSTRING(value));
 			break;
-		case OBJ_FUNCTION:
-			fprintf(stdout, "%s", AS_FUNCTION(value));
+		case OBJ_FUNCTION: {
+			ObjFunction* function = AS_FUNCTION(value);
+			if(function->name == NULL)
+				fprintf(stdout, "<script>");
+			else
+				fprintf(stdout, "%s", function->name->chars);
 			break;
+		}
 	}
 }

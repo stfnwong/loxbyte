@@ -64,9 +64,19 @@ typedef struct {
 
 
 /*
+ * FunctionType
+ */
+typedef enum {
+	TYPE_FUNCTION,
+	TYPE_SCRIPT
+} FunctionType;
+
+/*
  * Compiler
  */
 typedef struct {
+	ObjFunction* function;
+	FunctionType ftype;
 	Local locals[UINT8_COUNT];
 	int local_count;
 	int scope_depth;
@@ -91,7 +101,7 @@ static void var_decl(void);
 
 static Chunk* current_chunk(void)
 {
-	return compiling_chunk;
+	return &current_compiler->function->chunk;
 }
 
 
@@ -258,25 +268,37 @@ static void emit_constant(Value value)
 /*
  * init_compiler()
  */
-static void init_compiler(Compiler* compiler)
+static void init_compiler(Compiler* compiler, FunctionType type)
 {
+	compiler->function = NULL;
+	compiler->ftype = type;
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
+	compiler->function = new_function(); // compile this function
 	current_compiler = compiler;
+
+	// Now we claim stack slot zero for internal compiler use
+	Local* local = &current_compiler->locals[current_compiler->local_count++];
+	local->depth = 0;
+	local->name.start = "";
+	local->name.length = 0;
 }
 
 
 /*
  * end_compiler()
  */
-static void end_compiler(void)
+static ObjFunction* end_compiler(void)
 {
 	emit_return();
+	ObjFunction* function = current_compiler->function;
 	// TODO: put this behind verbose switch?
 #ifdef DEBUG_PRINT_CODE
 	if(!parser.had_error)
-		disassemble_chunk(current_chunk(), "code");
+		disassemble_chunk(current_chunk(), function->name != NULL ? function->name->chars : "<script>");
 #endif /*DEBUG_PRINT_CODE*/
+
+	return function;
 }
 
 
@@ -974,12 +996,12 @@ static ParseRule* get_rule(TokenType type)
 
 
 
-bool compile(const char* source, Chunk* chunk)
+ObjFunction* compile(const char* source)
 {
 	init_scanner(source);
 	Compiler compiler;
-	init_compiler(&compiler);
-	compiling_chunk = chunk;
+	init_compiler(&compiler, TYPE_SCRIPT);
+	//compiling_chunk = chunk;
 
 	parser.had_error = false;
 	parser.panic_mode = false;
@@ -990,7 +1012,7 @@ bool compile(const char* source, Chunk* chunk)
 	while(!match(TOKEN_EOF))
 		declaration();
 
-	end_compiler();
+	ObjFunction* function = end_compiler();
 
-	return !parser.had_error;
+	return parser.had_error ? NULL : function;
 }

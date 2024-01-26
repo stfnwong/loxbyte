@@ -22,8 +22,10 @@ static void runtime_error(const char* format, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	size_t instr = vm.ip - vm.chunk->code - 1;
-	int line = vm.chunk->lines[instr];
+	CallFrame* frame = &vm.frames[vm.frame_count-1];
+	size_t instr = frame->ip - frame->function->chunk.code-1;
+	int line = frame->function->chunk.lines[instr];
+
 	fprintf(stderr, "[line %d] in script \n", line);
 
 	reset_stack();
@@ -34,6 +36,7 @@ static void runtime_error(const char* format, ...)
 static void reset_stack(void)
 {
 	vm.stack_top = vm.stack;
+	vm.frame_count = 0;
 }
 
 void push(Value value)
@@ -79,11 +82,13 @@ static void concatenate(void)
 
 static InterpResult run(void) 
 {
+	CallFrame* frame = &vm.frames[vm.frame_count-1];
+
 	// NOTE: why use a macro here? Faster? Because its inlined?
-#define READ_BYTE() (*vm.ip++)
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_BYTE() (*frame->ip++)
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 
 #define BINARY_OP(value_type, op) \
 	do { \
@@ -108,7 +113,7 @@ static InterpResult run(void)
 		}
 		fprintf(stdout, "\n");
 
-		disassemble_instr(vm.chunk, (int)(vm.ip - vm.chunk->code));
+		disassemble_instr(&frame->function->chunk, (int)(frame->ip - frame->function->chunk.code));
 #endif /*DEBUG_TRACE_EXECUTION*/
 
 		uint8_t instr = READ_BYTE();
@@ -176,13 +181,13 @@ static InterpResult run(void)
 
 			case OP_GET_LOCAL: {
 				uint8_t slot = READ_BYTE();
-				push(vm.stack[slot]);
+				push(frame->slots[slot]);
 				break;
 			}
 
 			case OP_SET_LOCAL: {
 				uint8_t slot = READ_BYTE();
-				vm.stack[slot] = peek(0);
+				frame->slots[slot] = peek(0);
 				break;
 			}
 
@@ -239,20 +244,20 @@ static InterpResult run(void)
 
 			case OP_JUMP: {
 				uint16_t offset = READ_SHORT();
-				vm.ip += offset;
+				frame->ip += offset;
 				break;
 			}
 
 			case OP_JUMP_IF_FALSE: {
 				uint16_t offset = READ_SHORT();
 				if(is_falsey(peek(0)))
-					vm.ip += offset;
+					frame->ip += offset;
 				break;
 		    }
 
 			case OP_LOOP: {
 				uint16_t offset = READ_SHORT();
-				vm.ip -= offset;
+				frame->ip -= offset;
 				break;
 			}
 
@@ -289,23 +294,19 @@ void free_vm(void)
 
 InterpResult interpret(const char* source)
 {
-	Chunk chunk;
-
-	init_chunk(&chunk);
-
-	if(!compile(source, &chunk))
-	{
-		free_chunk(&chunk);
+	ObjFunction* function = compile(source);
+	if(function == NULL)
 		return INTERPRET_COMPILE_ERROR;
-	}
 
-	vm.chunk = &chunk;
-	vm.ip = vm.chunk->code;
+	push(OBJ_VAL(function));
+
+	CallFrame* frame = &vm.frames[vm.frame_count++];
+	frame->function = function;
+	frame->ip = function->chunk.code;
+	frame->slots = vm.stack;
 
 	InterpResult res = run();
 
-	free_chunk(&chunk);
-
-	return INTERPRET_OK;
+	return run();
 }
 
