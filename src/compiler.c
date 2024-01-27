@@ -75,6 +75,7 @@ typedef enum {
  * Compiler
  */
 typedef struct {
+	struct Compiler* enclosing;  // linked list of compilers
 	ObjFunction* function;
 	FunctionType ftype;
 	Local locals[UINT8_COUNT];
@@ -91,6 +92,9 @@ Compiler* current_compiler = NULL;
 //static void expresion(void);
 static ParseRule* get_rule(TokenType type);
 static void parse_precedence(Precedence prec);
+
+static void mark_initialized(void);
+static uint8_t argument_list(void);
 
 // Forward declare production functions 
 static void statement(void);
@@ -270,12 +274,21 @@ static void emit_constant(Value value)
  */
 static void init_compiler(Compiler* compiler, FunctionType type)
 {
+	compiler->enclosing = current_compiler;
 	compiler->function = NULL;
 	compiler->ftype = type;
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
 	compiler->function = new_function(); // compile this function
 	current_compiler = compiler;
+
+	if(type != TYPE_SCRIPT)
+	{
+		current_compiler->function->name = copy_string(
+				parser.previous.start,
+				parser.previous.length
+		);
+	}
 
 	// Now we claim stack slot zero for internal compiler use
 	Local* local = &current_compiler->locals[current_compiler->local_count++];
@@ -298,6 +311,9 @@ static ObjFunction* end_compiler(void)
 		disassemble_chunk(current_chunk(), function->name != NULL ? function->name->chars : "<script>");
 #endif /*DEBUG_PRINT_CODE*/
 
+	// Walk back up the linked list each time we are done
+	// with a compiler.
+	current_compiler = current_compiler->enclosing;
 	return function;
 }
 
@@ -391,6 +407,15 @@ static void binary(bool can_assign)
 		default:
 			return;		// unreachable
 	}
+}
+
+/*
+ * call()
+ */
+static void call(bool can_assign)
+{
+	uint8_t arg_count = argument_list();
+	emit_bytes(OP_CALL, arg_count);
 }
 
 
@@ -573,6 +598,109 @@ static void block(void)
 }
 
 /*
+ * define_variable()
+ */
+static void define_variable(uint8_t global)
+{
+	// Don't define locals here
+	if(current_compiler->scope_depth > 0)
+	{
+		mark_initialized();
+		return;
+	}
+
+	emit_bytes(OP_DEFINE_GLOBAL, global);
+}
+
+
+/*
+ * argument_list()
+ */
+static uint8_t argument_list(void)
+{
+	uint8_t arg_count = 0;
+	if(!check(TOKEN_RIGHT_PAREN))
+	{
+		do
+		{
+			expression();
+			// Do arity check 
+			if(arg_count >= 255)
+				error("Can't have more than 255 arguments.");
+			arg_count++;
+		} while(match(TOKEN_COMMA));
+	}
+
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after argument list.");
+
+	return arg_count;
+}
+
+
+
+/*
+ * function()
+ * Compiles a function (parameter list and block body) and
+ * place it on top of the stack.
+ */
+static void function(FunctionType type)
+{
+	Compiler compiler;
+	init_compiler(&compiler, type);
+
+	begin_scope();
+	
+	// Compile the parameter list 
+	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+	if(!check(TOKEN_RIGHT_PAREN))
+	{
+		do
+		{
+			if(current_compiler->function->arity >= 255)
+				error_at_current("Can't have more than 255 parameters");
+
+			uint8_t param_const = parse_variable("Expect parameter name.");
+			define_variable(param_const);
+		} while(match(TOKEN_COMMA));
+	}
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after function parameters.");
+
+	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+	block();
+
+	// Create a function object 
+	ObjFunction* function = end_compiler();
+	emit_bytes(OP_CONSTANT, make_constant(OBJ_VAL(function)));
+}
+
+/*
+ * mark_initialized()
+ */
+static void mark_initialized(void)
+{
+	// A local varsiable with non-zero depth means that we 
+	// have seen and compiled that variables initializer.
+	if(current_compiler->scope_depth == 0)
+		return;
+
+	current_compiler->locals[current_compiler->local_count-1].depth = current_compiler->scope_depth;
+}
+
+
+
+/*
+ * func_decl()
+ */
+static void func_decl(void)
+{
+	uint8_t global = parse_variable("Expect function name");
+	mark_initialized();
+	function(TYPE_FUNCTION);
+	define_variable(global);
+}
+
+
+/*
  * expression_statement()
  */
 static void expression_statement(void)
@@ -674,33 +802,6 @@ static void while_statement(void)
 	emit_loop(loop_start);
 	patch_jump(exit_jump);
 	emit_byte(OP_POP);
-}
-
-
-/*
- * mark_initialized()
- */
-static void mark_initialized(void)
-{
-	// A local varsiable with non-zero depth means that we 
-	// have seen and compiled that variables initializer.
-	current_compiler->locals[current_compiler->local_count-1].depth = current_compiler->scope_depth;
-}
-
-
-/*
- * define_variable()
- */
-static void define_variable(uint8_t global)
-{
-	// Don't define locals here
-	if(current_compiler->scope_depth > 0)
-	{
-		mark_initialized();
-		return;
-	}
-
-	emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
 
@@ -822,7 +923,9 @@ static void synchronise(void)
  */
 static void declaration(void)
 {
-	if(match(TOKEN_VAR))
+	if(match(TOKEN_FUNC))
+		func_decl();
+	else if(match(TOKEN_VAR))
 		var_decl();
 	else
 		statement();
@@ -949,7 +1052,7 @@ static void unary(bool can_assign)
 
 // Parsing Rules
 ParseRule rules[] = {
-	[TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
+	[TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
 	[TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
 	[TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
 	[TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
@@ -1005,7 +1108,7 @@ ObjFunction* compile(const char* source)
 
 	parser.had_error = false;
 	parser.panic_mode = false;
-	parser.verbose = false;		// TODO: make this settable from shell
+	parser.verbose = true;		// TODO: make this settable from shell
 
 	advance();
 
@@ -1013,6 +1116,7 @@ ObjFunction* compile(const char* source)
 		declaration();
 
 	ObjFunction* function = end_compiler();
+	//emit_return();	// TODO: don't need this...?
 
 	return parser.had_error ? NULL : function;
 }

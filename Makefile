@@ -79,11 +79,9 @@ programs : $(PROGRAMS)
 assem : $(ASSEM_OBJECTS)
 
 clean:
-	rm -fv *.o $(OBJ_DIR)/*.o 
+	@rm -fv *.o $(OBJ_DIR)/*.o 
 	# Clean test programs
-	rm -fv $(TEST_BIN_DIR)/test_*
-	# Remove the program binary from the root dir
-	#rm -v lox
+	@rm -fv $(TEST_BIN_DIR)/test_*
 
 print-%:
 	@echo $* = $($*)

@@ -1,0 +1,5 @@
+func are_we_there_yet() {
+	print "yes";
+}
+
+print are_we_there_yet;

@@ -1,1 +1,1 @@
-print(!(5 - 4 > 3 * 2 == !nil));   // Expect true
+print(!(5 - 4 > 3 * 2 == !nil)); // expect true

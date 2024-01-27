@@ -13,3 +13,6 @@ clox
 
 # Ignore clangd cache
 .cache/
+
+# Ignore any putput files with extension *.out
+*.out

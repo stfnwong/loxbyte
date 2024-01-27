@@ -128,6 +128,8 @@ int disassemble_instr(Chunk* chunk, int offset)
 			return jump_instr("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OP_LOOP:
 			return jump_instr("OP_LOOP", -1, chunk, offset);
+		case OP_CALL:
+			return byte_instr("OP_CALL", chunk, offset);
 		case OP_CONSTANT:
 			return const_instr("OP_CONSTANT", chunk, offset);
 		default:

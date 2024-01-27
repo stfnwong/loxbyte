@@ -137,7 +137,7 @@ static void skip_whitespace(void)
 				break;
 		    }
 			case '/': {
-				if(peek_next() == '\\') {
+				if(peek_next() == '/') {
 					while(peek() != '\n' && !is_at_end())
 						advance();
 				}

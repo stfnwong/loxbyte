@@ -19,7 +19,8 @@ Which builds the intepreter binary and places it in the root directory.
 Its the same grammar as before (since its the same language). These are the productions
 implemented so far.
 
-### 
+- `expression -> assignment;`
+
 
 ### Statements
 The statement grammar at the time of writing is 
@@ -30,6 +31,8 @@ The statement grammar at the time of writing is
 - `expr_stmt -> expression ";"`
 - `print_stmt -> "print" expression ";"`
 - `block_stmt -> "{" declaration "}";`
+
+
 
 
 ## What's implemented
