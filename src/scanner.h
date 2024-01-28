@@ -21,7 +21,7 @@ typedef enum {
 	TOKEN_SLASH,
 	TOKEN_STAR,
 
-	// One or two character tokens 
+	// One or two character tokens
 	TOKEN_BANG,
 	TOKEN_BANG_EQUAL,
 	TOKEN_EQUAL,
@@ -31,7 +31,7 @@ typedef enum {
 	TOKEN_LESS,
 	TOKEN_LESS_EQUAL,
 
-	// Literals 
+	// Literals
 	TOKEN_IDENTIFIER,
 	TOKEN_STRING,
 	TOKEN_NUMBER,
@@ -60,11 +60,6 @@ typedef enum {
 } TokenType;
 
 
-// Human-readable string representation of TokenType
-//static const char* token_string[] = {
-//};
-
-
 /*
  * Token
  */
@@ -81,6 +76,52 @@ Token scan_token(void);
 
 
 void print_token(Token* token);
+
+
+// Human-readable string representation of TokenType
+// These need to be in the same order as the TokenType enum
+static const char* token_string[] = {
+	",",		// TOKEN_COMMA
+	".",		// TOKEN_DOT
+	"{",		// TOKEN_LEFT_BRACE
+	"(",		// TOKEN_LEFT_PAREN
+	"-",		// TOKEN_MINUS
+	"+",		// TOKEN_PLUS
+	"}",		// TOKEN_RIGHT_BRACE
+	")",		// TOKEN_RIGHT_PAREN
+	";",		// TOKEN_SEMICOLON
+	"/",		// TOKEN_SLASH
+	"*",		// TOKEN_STAR
+	"!",		// TOKEN_BANG
+	"!=",		// TOKEN_BANG_EQUAL
+	"=",		// TOKEN_EQUAL
+	"==",		// TOKEN_EQUAL_EQUAL
+	">",		// TOKEN_GREATER
+	">=",		// TOKEN_GREATER_EQUAL
+	"<",		// TOKEN_LESS
+	"<=",		// TOKEN_LESS_EQUAL
+	"IDEN",		// TOKEN_IDENTIFIER
+	"STR",		// TOKEN_STRING
+	"NUM",		// TOKEN_NUMBER
+	"AND",		// TOKEN_AND
+	"CLASS",	// TOKEN_CLASS
+	"ELSE",	    // TOKEN_ELSE
+	"FALSE",	// TOKEN_FALSE
+	"FOR",		// TOKEN_FOR
+	"FUNC",		// TOKEN_FUNC
+	"IF",		// TOKEN_IF
+	"NIL",		// TOKEN_NIL
+	"OR",		// TOKEN_OR
+	"PRINT",	// TOKEN_PRINT
+	"RETURN",	// TOKEN_RETURN
+	"SUPER",	// TOKEN_SUPER
+	"THIS",		// TOKEN_THIS
+	"TRUE",		// TOKEN_TRUE
+	"VAR",		// TOKEN_VAR
+	"WHILE", 	// TOKEN_WHILE
+	"ERROR", 	// TOKEN_ERROR
+	"EOF", 		// TOKEN_EOF
+};
 
 
 #endif /*__LOX_SCANNER_H*/

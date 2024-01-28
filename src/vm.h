@@ -51,4 +51,6 @@ InterpResult interpret(const char* source);
 
 extern VM vm;
 
+void print_vm_stack(void);
+
 #endif /*__LOX_VM_H*/

@@ -260,6 +260,7 @@ static void emit_loop(int loop_start)
 
 static void emit_return(void)
 {
+	emit_byte(OP_NIL);
 	emit_byte(OP_RETURN);
 }
 
@@ -308,7 +309,10 @@ static ObjFunction* end_compiler(void)
 	// TODO: put this behind verbose switch?
 #ifdef DEBUG_PRINT_CODE
 	if(!parser.had_error)
+	{
 		disassemble_chunk(current_chunk(), function->name != NULL ? function->name->chars : "<script>");
+		fprintf(stdout, "[%s] compiled chunk of length %d\n", __func__, current_chunk()->count);
+	}
 #endif /*DEBUG_PRINT_CODE*/
 
 	// Walk back up the linked list each time we are done
@@ -633,6 +637,8 @@ static uint8_t argument_list(void)
 
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after argument list.");
 
+	fprintf(stdout, "[%s] found %d arguments for call instr\n", __func__, arg_count);
+
 	return arg_count;
 }
 
@@ -785,6 +791,26 @@ static void print_statement(void)
 
 
 /*
+ * return_statement()
+ */
+static void return_statement(void)
+{
+	if(current_compiler->ftype == TYPE_SCRIPT)
+		error("Can't return from top level code.");
+
+	if(match(TOKEN_SEMICOLON))
+		emit_return();
+	else
+	{
+		expression();
+		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+		emit_byte(OP_RETURN);
+	}
+}
+
+
+
+/*
  * while_statement()
  */
 static void while_statement(void)
@@ -872,6 +898,8 @@ static void statement(void)
 		for_statement();
 	else if(match(TOKEN_IF))
 		if_statement();
+	else if(match(TOKEN_RETURN))
+		return_statement();
 	else if(match(TOKEN_WHILE))
 		while_statement();
 	else if(match(TOKEN_LEFT_BRACE))
@@ -996,7 +1024,9 @@ static void string(bool can_assign)
 static void named_variable(Token name, bool can_assign)
 {
 	uint8_t get_op, set_op;
-	uint8_t arg = resolve_local(current_compiler, &name);
+	int arg = resolve_local(current_compiler, &name);
+
+	fprintf(stdout, "[%s] arg: %d\n", __func__, arg);
 
 	if(arg != -1)
 	{
@@ -1005,6 +1035,7 @@ static void named_variable(Token name, bool can_assign)
 	}
 	else
 	{
+		arg = identifier_constant(&name);
 		get_op = OP_GET_GLOBAL;
 		set_op = OP_SET_GLOBAL;
 	}
@@ -1104,7 +1135,6 @@ ObjFunction* compile(const char* source)
 	init_scanner(source);
 	Compiler compiler;
 	init_compiler(&compiler, TYPE_SCRIPT);
-	//compiling_chunk = chunk;
 
 	parser.had_error = false;
 	parser.panic_mode = false;

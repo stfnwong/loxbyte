@@ -22,11 +22,22 @@ static void runtime_error(const char* format, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	CallFrame* frame = &vm.frames[vm.frame_count-1];
-	size_t instr = frame->ip - frame->function->chunk.code-1;
-	int line = frame->function->chunk.lines[instr];
+	// Print a stack trace 
+	for(int i = vm.frame_count-1; i >= 0; --i)
+	{
+		CallFrame* frame = &vm.frames[i];
+		ObjFunction* function = frame->function;
 
-	fprintf(stderr, "[line %d] in script \n", line);
+		// The instruction pointer always points to the NEXT instruction
+		// to execute, so we subtract 1 here so that we are sitting on the 
+		// current instruction.
+		size_t instr = frame->ip - function->chunk.code - 1;
+		fprintf(stderr, "[line %d] in ", function->chunk.lines[instr]);
+		if(function->name == NULL)
+			fprintf(stderr, "script\n");
+		else
+			fprintf(stderr, "%s()\n", function->name->chars);
+	}
 
 	reset_stack();
 }
@@ -79,6 +90,54 @@ static void concatenate(void)
 }
 
 
+/*
+ * call()
+ */
+static bool call(ObjFunction* function, int arg_count)
+{
+	if(arg_count > function->arity)
+	{
+		runtime_error("Expected %d arguments but got %d.", function->arity, arg_count);
+		return false;
+	}
+
+	// Make sure we don't overflow the call frame array
+	if(vm.frame_count == FRAMES_MAX)
+	{
+		runtime_error("Stack overflow");
+		return false;
+	}
+
+	CallFrame* frame = &vm.frames[vm.frame_count++];
+	frame->function = function;
+	frame->ip = function->chunk.code;
+	frame->slots = vm.stack_top - arg_count - 1;
+
+	return true;
+}
+
+/*
+ * call_value()
+ */
+static bool call_value(Value callee, int arg_count)
+{
+	if(IS_OBJ(callee))
+	{
+		switch(OBJ_TYPE(callee))
+		{
+			case OBJ_FUNCTION:
+				return call(AS_FUNCTION(callee), arg_count);
+
+			default:
+				// Non-callable objects 
+				break;
+		}
+	}
+
+	runtime_error("Can only call functions and classes.");
+	return false;
+}
+
 
 static InterpResult run(void) 
 {
@@ -130,9 +189,11 @@ static InterpResult run(void)
 			case OP_NIL:
 				push(NIL_VAL);
 				break;
+
 			case OP_TRUE:
 				push(BOOL_VAL(true));
 				break;
+
 			case OP_FALSE:
 				push(BOOL_VAL(false));
 				break;
@@ -220,12 +281,14 @@ static InterpResult run(void)
 				}
 				break;
 			}
+
 			case OP_SUB: BINARY_OP(NUMBER_VAL, -); break;
 			case OP_MUL: BINARY_OP(NUMBER_VAL, *); break;
 			case OP_DIV: BINARY_OP(NUMBER_VAL, /); break;
 			case OP_NOT:
 				push(BOOL_VAL(is_falsey(pop())));
 				break;
+
 			case OP_NEGATE: {
 				if(!IS_NUMBER(peek(0))) {
 					runtime_error("Operand must be a number");
@@ -261,8 +324,31 @@ static InterpResult run(void)
 				break;
 			}
 
+			case OP_CALL: {
+				int arg_count = READ_BYTE();
+				if(!call_value(peek(arg_count), arg_count))
+					return INTERPRET_RUNTIME_ERROR;
+
+				frame = &vm.frames[vm.frame_count-1];
+				break;
+			}
+
 			case OP_RETURN: {
-				return INTERPRET_OK;
+				Value result = pop();
+				vm.frame_count--;
+				
+				if(vm.frame_count == 0)
+				{
+					// No more call frames - program is over
+					pop();
+					return INTERPRET_OK;
+				}
+
+				vm.stack_top = frame->slots;
+				push(result);
+
+				frame = &vm.frames[vm.frame_count-1];
+				break;
 			}
 		}
 	}
@@ -299,14 +385,23 @@ InterpResult interpret(const char* source)
 		return INTERPRET_COMPILE_ERROR;
 
 	push(OBJ_VAL(function));
-
-	CallFrame* frame = &vm.frames[vm.frame_count++];
-	frame->function = function;
-	frame->ip = function->chunk.code;
-	frame->slots = vm.stack;
-
-	InterpResult res = run();
+	call_value(OBJ_VAL(function), 0);
 
 	return run();
+}
+
+
+/*
+ * DEBUG FUNCTIONS FOR VM
+ */
+
+void print_vm_stack(void)
+{
+	// Save the old stack_top pointer
+	Value* old_stack_top = vm.stack_top;
+
+
+	// Restore the old top pointer
+	vm.stack_top = old_stack_top;
 }
 

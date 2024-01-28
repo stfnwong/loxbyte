@@ -75,9 +75,9 @@ int disassemble_instr(Chunk* chunk, int offset)
 
 	// Show the line number of the instruction 
 	if(offset > 0 && chunk->lines[offset] == chunk->lines[offset-1])
-		fprintf(stdout, "   |  ");
+		fprintf(stdout, "    |  ");
 	else
-		fprintf(stdout, "%4d  ", chunk->lines[offset]);
+		fprintf(stdout, ":%4d  ", chunk->lines[offset]);
 
 	uint8_t instr = chunk->code[offset];
 	switch(instr)

@@ -3,3 +3,4 @@ func are_we_there_yet() {
 }
 
 print are_we_there_yet;
+are_we_there_yet();

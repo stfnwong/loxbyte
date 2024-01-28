@@ -10,6 +10,7 @@ typedef struct {
 	const char* start;
 	const char* current;
 	int line;
+	bool verbose;
 } Scanner;
 
 
@@ -25,6 +26,14 @@ static Token make_token(TokenType type)
 	token.start = scanner.start;
 	token.length = (int) (scanner.current - scanner.start);
 	token.line = scanner.line;
+
+	if(scanner.verbose)
+	{
+		fprintf(stdout, "[%s]: ", __func__);
+		print_token(&token);
+		//fprintf(stdout, "[%s] line:%d, type = [%s]\n", __func__, token.line, token_string[token.type]);
+		//fprintf(stdout, "[%s] [%s]:%d, type = [%s]\n", __func__, token.start, token.line, token_string[token.type]);
+	}
 
 	return token;
 }
@@ -277,6 +286,7 @@ void init_scanner(const char* source)
 	scanner.start = source;
 	scanner.current = source;
 	scanner.line = 1;
+	scanner.verbose = true;		// TODO: make settable
 }
 
 
@@ -334,6 +344,6 @@ Token scan_token(void)
 
 void print_token(Token* token)
 {
-	fprintf(stdout, "Token(%02d) '%.*s'\n", token->type, token->length, token->start);
+	fprintf(stdout, "Token(<%s>) '%.*s'\n", token_string[token->type], token->length, token->start);
 }
 
