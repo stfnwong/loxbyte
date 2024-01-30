@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -11,9 +12,20 @@
 
 VM vm;
 
+// ==== Native function definitions ==== // 
+static Value clock_native(int arg_count, Value* args)
+{
+	return NUMBER_VAL((double) clock() / CLOCKS_PER_SEC);
+}
+
+
+
 static void reset_stack(void);
 
 
+/*
+ * runtime_error()
+ */
 static void runtime_error(const char* format, ...)
 {
 	va_list args;
@@ -40,6 +52,19 @@ static void runtime_error(const char* format, ...)
 	}
 
 	reset_stack();
+}
+
+
+/*
+ * define_native()
+ */
+static void define_native(const char* name, NativeFn function)
+{
+	push(OBJ_VAL(copy_string(name, (int) strlen(name))));
+	push(OBJ_VAL(new_native(function)));
+	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+	pop();
+	pop();
 }
 
 
@@ -127,6 +152,15 @@ static bool call_value(Value callee, int arg_count)
 		{
 			case OBJ_FUNCTION:
 				return call(AS_FUNCTION(callee), arg_count);
+
+			case OBJ_NATIVE: {
+				NativeFn native = AS_NATIVE(callee);
+				Value result = native(arg_count, vm.stack_top - arg_count);
+				vm.stack_top -= arg_count + 1;
+				push(result);
+				
+				return true;
+			}
 
 			default:
 				// Non-callable objects 
@@ -367,6 +401,9 @@ void init_vm(void)
 	vm.objects = NULL;
 	init_table(&vm.strings);
 	init_table(&vm.globals);
+
+	// Define native functions here 
+	define_native("clock", clock_native);
 }
 
 

@@ -872,6 +872,8 @@ static void var_decl(void)
  */
 static void if_statement(void)
 {
+	fprintf(stdout, "[%s] compiling if statement\n", __func__);
+
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
 	expression();
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");

@@ -129,6 +129,19 @@ ObjFunction* new_function(void)
 }
 
 
+/*
+ * new_native()
+ */
+ObjNative* new_native(NativeFn function)
+{
+	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+	native->function = function;
+	
+	return native;
+}
+
+
+
 void print_object(Value value)
 {
 	switch(OBJ_TYPE(value))
@@ -144,5 +157,8 @@ void print_object(Value value)
 				fprintf(stdout, "%s", function->name->chars);
 			break;
 		}
+		case OBJ_NATIVE:
+			fprintf(stdout, "<native fn>");
+			break;
 	}
 }
