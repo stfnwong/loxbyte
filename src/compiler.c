@@ -623,6 +623,7 @@ static void define_variable(uint8_t global)
 static uint8_t argument_list(void)
 {
 	uint8_t arg_count = 0;
+
 	if(!check(TOKEN_RIGHT_PAREN))
 	{
 		do
@@ -662,6 +663,7 @@ static void function(FunctionType type)
 	{
 		do
 		{
+			current_compiler->function->arity++;
 			if(current_compiler->function->arity >= 255)
 				error_at_current("Can't have more than 255 parameters");
 
