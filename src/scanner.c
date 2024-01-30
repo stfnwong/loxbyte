@@ -344,6 +344,11 @@ Token scan_token(void)
 
 void print_token(Token* token)
 {
-	fprintf(stdout, "Token(<%s>) '%.*s'\n", token_string[token->type], token->length, token->start);
+	fprintf(stdout, "Token('%s') '%.*s' (%d chars)\n", 
+			token_string[token->type], 
+			token->length, 
+			token->start, 
+			token->length
+	);
 }
 

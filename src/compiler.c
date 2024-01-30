@@ -154,6 +154,7 @@ static void advance(void)
 		{
 			fprintf(stdout, "[%s]: parser.current: ", __func__);
 			print_token(&parser.current);
+			fprintf(stdout, " ");
 		}
 
 		if(parser.current.type != TOKEN_ERROR)
@@ -501,9 +502,12 @@ static void add_local(Token name)
 		return;
 	}
 
+	fprintf(stdout, "[%s] adding local var '%.*s'.\n", __func__, name.length, name.start);
+
 	Local* local = &current_compiler->locals[current_compiler->local_count];
 	local->name = name;
 	local->depth = -1; 	// mark as uninitialized
+	current_compiler->local_count++;
 }
 
 
