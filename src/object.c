@@ -23,7 +23,7 @@ static uint32_t hash_string(const char* key, int length)
 
 	for(int i = 0; i < length; i++)
 	{
-		hash ^= key[1];
+		hash ^= key[i];
 		hash += 16777619;
 	}
 

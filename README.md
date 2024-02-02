@@ -13,7 +13,15 @@ One `Makefile` handles everything. To build all the sources run
 
 `make all`
 
-Which builds the intepreter binary and places it in the root directory.
+Which builds the intepreter binary and places it in the root directory. If you are using
+`clangd` or some other LSP that needs a `compile_commands.json` then also install `bear`
+
+`pacman -Sy bear`  (or whatever the install command is for your package manager)
+
+And then
+
+`bear -- make all`
+
 
 ## Grammar
 Its the same grammar as before (since its the same language). These are the productions

@@ -1146,7 +1146,7 @@ ObjFunction* compile(const char* source)
 
 	parser.had_error = false;
 	parser.panic_mode = false;
-	parser.verbose = true;		// TODO: make this settable from shell
+	parser.verbose = true;	// TODO: make this settable from shell
 
 	advance();
 
@@ -1154,7 +1154,6 @@ ObjFunction* compile(const char* source)
 		declaration();
 
 	ObjFunction* function = end_compiler();
-	//emit_return();	// TODO: don't need this...?
 
 	return parser.had_error ? NULL : function;
 }
