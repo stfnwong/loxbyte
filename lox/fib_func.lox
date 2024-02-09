@@ -3,6 +3,6 @@ func fib(n) {
 	return fib(n - 2) + fib(n - 1);
 }
 
-//var start = clock();
+var start = clock();
 print fib(16);
-//print clock() - start;
+print clock() - start;
