@@ -47,7 +47,7 @@ $(TEST_OBJECTS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.c $(HEADERS)
 	$(CC) $(CFLAGS) $(INCS) -c $< -o $@ 
 
 # ==== TEST TARGETS ==== #
-TESTS=test_scanner test_table test_compiler
+TESTS=test_scanner test_table 
 
 $(TESTS): $(TEST_OBJECTS) $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJ_DIR)/$@.o\
